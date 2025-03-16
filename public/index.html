@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Event Streaming</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-purple-500 via-indigo-600 to-blue-700 flex items-center justify-center min-h-screen text-white">
+    <!-- Main Container -->
+    <div class="w-full max-w-md bg-black/40 backdrop-blur-lg rounded-2xl shadow-lg p-6 space-y-6">
+        <h1 class="text-3xl font-bold text-center text-white drop-shadow-md">Live Event Streaming</h1>
+
+        <!-- User ID Input -->
+        <div class="space-y-2">
+            <label for="userId" class="block text-sm font-medium text-gray-200">User ID:</label>
+            <div class="flex space-x-2">
+                <input type="text" id="userId" placeholder="Enter your user ID"
+                    class="w-full px-4 py-2 border border-gray-300 bg-black/20 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent">
+                <button onclick="connect()"
+                    class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-base font-medium rounded-md text-white bg-gradient-to-r from-pink-500 to-orange-400 hover:from-pink-600 hover:to-orange-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500">
+                    Connect
+                </button>
+            </div>
+        </div>
+
+        <!-- Event ID Input -->
+        <div class="space-y-2">
+            <label for="eventId" class="block text-sm font-medium text-gray-200">Event ID:</label>
+            <div class="flex space-x-2">
+                <input type="text" id="eventId" placeholder="Enter event ID"
+                    class="w-full px-4 py-2 border border-gray-300 bg-black/20 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent">
+                <button onclick="joinEvent()"
+                    class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-base font-medium rounded-md text-white bg-gradient-to-r from-green-400 to-teal-400 hover:from-green-500 hover:to-teal-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                    Join Event
+                </button>
+                <button onclick="leaveEvent()"
+                    class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-base font-medium rounded-md text-white bg-gradient-to-r from-red-400 to-pink-400 hover:from-red-500 hover:to-pink-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                    Leave Event
+                </button>
+            </div>
+        </div>
+
+        <!-- Message Input -->
+        <div class="space-y-2">
+            <input type="text" id="messageInput" placeholder="Type a message"
+                class="w-full px-4 py-2 border border-gray-300 bg-black/20 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent">
+            <button onclick="sendMessage()"
+                class="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent text-base font-medium rounded-md text-white bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">
+                Send Message
+            </button>
+        </div>
+
+        <!-- Messages Box -->
+        <div id="messages" class="h-64 overflow-y-auto border border-gray-600 rounded-md p-2 bg-black/30 backdrop-blur-sm">
+        </div>
+    </div>
+
+    <script>
+        let socket;
+        let userId;
+        let eventId;
+
+        function connect() {
+            userId = document.getElementById('userId').value;
+            socket = io();
+
+            socket.on('userJoined', (data) => {
+                appendMessage(`${data.userId} joined the event.`);
+            });
+
+            socket.on('userLeft', (data) => {
+                appendMessage(`${data.userId} left the event.`);
+            });
+
+            socket.on('participantList', (participants) => {
+                console.log('Participants:', participants);
+            });
+
+            socket.on('receiveMessage', (data) => {
+                appendMessage(`${data.senderId}: ${data.message} (${new Date(data.timestamp).toLocaleTimeString()})`);
+            });
+        }
+
+        function joinEvent() {
+            eventId = document.getElementById('eventId').value;
+            socket.emit('joinEvent', { userId, eventId });
+        }
+
+        function leaveEvent() {
+            socket.emit('leaveEvent', { userId, eventId });
+        }
+
+        function sendMessage() {
+            const message = document.getElementById('messageInput').value;
+            socket.emit('sendMessage', { eventId, message, senderId: userId });
+            document.getElementById('messageInput').value = '';
+        }
+
+        function appendMessage(message) {
+            const messagesDiv = document.getElementById('messages');
+            const messageElement = document.createElement('div');
+            messageElement.textContent = message;
+            messageElement.className = 'p-2 bg-black/40 rounded-md text-gray-200 mb-2';
+            messagesDiv.appendChild(messageElement);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+    </script>
+</body>
+</html>
